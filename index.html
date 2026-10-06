@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feria Universitaria - Registro de Ventas con IA</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">FU</div>
+      <div>
+        <h1>Feria Universitaria</h1>
+        <p>Sistema de registro y control de ventas con lectura de facturas por IA</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="summary-grid">
+      <article class="summary-card">
+        <span class="summary-label">Total recaudado</span>
+        <strong id="totalRecaudado">$0</strong>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Producto más vendido</span>
+        <strong id="productoMasVendido">Sin datos</strong>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Ventas realizadas</span>
+        <strong id="numeroTransacciones">0</strong>
+      </article>
+      <article class="summary-card">
+        <span class="summary-label">Unidades vendidas</span>
+        <strong id="unidadesVendidas">0</strong>
+      </article>
+    </section>
+
+    <section class="layout">
+      <article class="panel sale-panel">
+        <div class="panel-header">
+          <h2>Nueva venta</h2>
+          <p>Puedes registrar los productos manualmente o cargar una factura para que la IA los detecte.</p>
+        </div>
+
+        <section class="ai-box">
+          <div class="ai-title-row">
+            <div>
+              <span class="ai-badge">IA</span>
+              <strong>Lectura automática de factura</strong>
+            </div>
+            <span id="aiStatusBadge" class="status-badge status-idle">Esperando imagen</span>
+          </div>
+
+          <div class="field ai-file-field">
+            <label for="imagen">Factura / comprobante</label>
+            <input id="imagen" type="file" accept="image/*" />
+            <small>
+              Al subir una imagen, el sistema usa OCR/IA para intentar identificar productos, cantidades y precios.
+            </small>
+            <small class="error" id="imagenError"></small>
+          </div>
+
+          <label class="switch-row">
+            <input id="autoRegister" type="checkbox" checked />
+            <span>
+              <strong>Registrar automáticamente</strong>
+              <small>Si la lectura es suficientemente clara, la venta se guarda sin tener que pulsar “Registrar”.</small>
+            </span>
+          </label>
+
+          <div id="aiProgressWrapper" class="ai-progress-wrapper hidden">
+            <div class="ai-progress-head">
+              <span id="aiProgressText">Preparando análisis...</span>
+              <strong id="aiProgressPercent">0%</strong>
+            </div>
+            <div class="progress-track">
+              <div id="aiProgressBar" class="progress-bar"></div>
+            </div>
+          </div>
+
+          <div id="aiResult" class="ai-result hidden">
+            <div class="ai-result-head">
+              <strong>Resultado de la IA</strong>
+              <span id="aiConfidence">Confianza: --</span>
+            </div>
+            <p id="aiSummary"></p>
+
+            <details>
+              <summary>Ver texto reconocido</summary>
+              <pre id="aiRawText"></pre>
+            </details>
+          </div>
+
+          <div id="imagePreviewWrapper" class="image-preview hidden">
+            <img id="imagePreview" alt="Vista previa del comprobante" />
+            <button id="removeImageBtn" class="btn btn-light" type="button">Quitar imagen</button>
+          </div>
+        </section>
+
+        <div class="section-divider"><span>o agregar manualmente</span></div>
+
+        <section class="product-entry">
+          <div class="field">
+            <label for="producto">Producto</label>
+            <input id="producto" type="text" placeholder="Ej. Empanada" maxlength="60" />
+            <small class="error" id="productoError"></small>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="cantidad">Cantidad</label>
+              <input id="cantidad" type="number" min="1" step="1" placeholder="1" />
+              <small class="error" id="cantidadError"></small>
+            </div>
+            <div class="field">
+              <label for="precio">Precio unitario</label>
+              <input id="precio" type="number" min="1" step="1" placeholder="5000" />
+              <small class="error" id="precioError"></small>
+            </div>
+          </div>
+
+          <div class="calculation-box">
+            <span>Subtotal del producto</span>
+            <strong id="subtotalPreview">$0</strong>
+          </div>
+
+          <button id="addProductBtn" class="btn btn-secondary btn-full" type="button">
+            + Agregar producto a la venta
+          </button>
+        </section>
+
+        <section class="cart-box">
+          <div class="cart-header">
+            <div>
+              <h3>Productos de esta venta</h3>
+              <p id="cartCount">0 productos agregados</p>
+            </div>
+            <button id="clearCartBtn" class="btn-link danger-text" type="button">Vaciar</button>
+          </div>
+
+          <div id="cartEmpty" class="cart-empty">
+            Aún no has agregado productos.
+          </div>
+
+          <div id="cartItems" class="cart-items hidden"></div>
+
+          <div class="cart-total">
+            <span>Total de la venta</span>
+            <strong id="cartTotal">$0</strong>
+          </div>
+        </section>
+
+        <form id="ventaForm" novalidate>
+          <div class="field">
+            <label for="observacion">Observación de la venta</label>
+            <textarea id="observacion" rows="3" maxlength="180" placeholder="Opcional"></textarea>
+          </div>
+
+          <small class="error sale-error" id="ventaError"></small>
+          <button id="registerSaleBtn" class="btn btn-primary btn-full" type="submit">
+            Registrar venta completa
+          </button>
+        </form>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header table-header">
+          <div>
+            <h2>Ventas registradas</h2>
+            <p>Cada fila corresponde a una venta, aunque tenga varios productos.</p>
+          </div>
+          <button id="clearAllBtn" class="btn btn-danger-outline" type="button">Limpiar todo</button>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">🧾</div>
+          <h3>Aún no hay ventas</h3>
+          <p>Sube una factura o agrega productos manualmente.</p>
+        </div>
+
+        <div id="tableWrapper" class="table-wrapper hidden">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Productos</th>
+                <th>Unidades</th>
+                <th>Total</th>
+                <th>Origen</th>
+                <th>Fecha</th>
+                <th>Comprobante</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ventasBody"></tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="imageModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Comprobante</h3>
+        <button id="closeModalBtn" class="icon-btn" type="button">×</button>
+      </div>
+      <img id="modalImage" alt="Comprobante ampliado" />
+    </div>
+  </div>
+
+  <!-- Tesseract.js: OCR ejecutado en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
